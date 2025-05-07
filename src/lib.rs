@@ -1,16 +1,20 @@
 mod types;
 
 use types::ast::*;
+use types::enfa::*;
 use types::error::Error;
 use types::re::*;
 
 pub fn get_regex(pattern: &str) -> Result<RegEx, Error> {
     let ast = AstNode::from_regex(pattern)?;
+    let enfa = Nfa::from_ast(&ast);
 
     todo!(
-        "Generated ast: {:#?}\
+        "Generated AST: {:#?}\n\
+        Generated ∈-NFA: {:#?}\n\
         The rest is a work in progress",
-        ast
+        ast,
+        enfa,
     );
 }
 
@@ -43,5 +47,10 @@ mod tests {
             AstNode::literal('a')
                 + AstNode::character_pattern_exclusive(HashSet::from_iter("bc".chars()))
         );
+    }
+
+    #[test]
+    fn basic_regex() {
+        assert!(get_regex("aab").is_ok())
     }
 }

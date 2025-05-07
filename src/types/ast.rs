@@ -2,13 +2,13 @@ use crate::Error;
 use std::collections::hash_set::HashSet;
 use std::ops::Add;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Character {
     Literal(char),
     Pattern(CharacterPattern),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum CharacterPattern {
     Include(HashSet<char>),
     Exclude(HashSet<char>),
@@ -100,7 +100,7 @@ impl AstNode {
 impl Add for AstNode {
     type Output = AstNode;
 
-    /// The add function is always **left-associative**, but the AST generated in right-associative.
+    /// The add function is always **left-associative**, but the AST generates right-associative.
     /// Whenever you're adding two nodes, always remember the brackets.
     ///
     /// If the input is `abc`, `from_regex` will return `a + (b + c)`.
