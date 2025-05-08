@@ -1,6 +1,6 @@
 use crate::Error;
 use std::collections::hash_set::HashSet;
-use std::ops::Add;
+use std::ops::{Add, BitOr};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Character {
@@ -18,6 +18,7 @@ pub enum CharacterPattern {
 pub enum AstNode {
     Character(Character),
     Concat(Box<AstNode>, Box<AstNode>),
+    Alternate(Box<AstNode>, Box<AstNode>),  // or `|`
 }
 
 use Character::*;
@@ -41,54 +42,61 @@ impl AstNode {
         let mut next_index = 1;
 
         let node = {
-            if first_character == '[' {
-                let pattern_is_inclusive =
-                    pattern.chars().nth(1).ok_or(Error::UnexpectedEof(index))? != '^';
-                let mut pattern_set: HashSet<char> = HashSet::new();
-
-                let mut iter = pattern.chars();
-                iter.next(); // skip the first `[`
-                next_index += 1;
-
-                if !pattern_is_inclusive {
+            match first_character {
+                '[' => {
+                    let pattern_is_inclusive = pattern.chars().nth(1).ok_or(Error::UnexpectedEof(index))? != '^';
+                    let mut pattern_set: HashSet<char> = HashSet::new();
+                    let mut iter = pattern.chars();
                     iter.next();
                     next_index += 1;
-                }
-
-                let mut closed = false;
-
-                while let Some(character) = iter.next() {
-                    next_index += 1;
-
-                    if character == '\\' {
-                        pattern_set.insert(iter.next().ok_or(Error::UnexpectedEof(index))?);
+                    if !pattern_is_inclusive {
+                        iter.next();
                         next_index += 1;
-                    } else if character == ']' {
-                        closed = true;
-                        break;
+                    }
+                    let mut closed = false;
+                    while let Some(character) = iter.next() {
+                        next_index += 1;
+
+                        if character == '\\' {
+                            pattern_set.insert(iter.next().ok_or(Error::UnexpectedEof(index))?);
+                            next_index += 1;
+                        } else if character == ']' {
+                            closed = true;
+                            break;
+                        } else {
+                            pattern_set.insert(character);
+                        }
+                    }
+                    if !closed {
+                        return Err(Error::UnmatchedBracket(index));
+                    }
+                    if pattern_is_inclusive {
+                        Ok(Self::character_pattern_inclusive(pattern_set))
                     } else {
-                        pattern_set.insert(character);
+                        Ok(Self::character_pattern_exclusive(pattern_set))
                     }
                 }
-
-                if !closed {
-                    return Err(Error::UnmatchedBracket(index));
+                '|' => {
+                    return Err(Error::OrRefactor(Self::regex_to_ast(&pattern[next_index..], index + next_index, total_size)?))
                 }
-
-                if pattern_is_inclusive {
-                    Ok(Self::character_pattern_inclusive(pattern_set))
-                } else {
-                    Ok(Self::character_pattern_exclusive(pattern_set))
-                }
-            } else {
-                Ok(Self::literal(first_character))
+                _ => Ok(Self::literal(first_character)),
             }
         };
 
         if index + next_index >= total_size {
             node
         } else {
-            Ok(node? + Self::regex_to_ast(&pattern[next_index..], index + next_index, total_size)?)
+            match Self::regex_to_ast(&pattern[next_index..], index + next_index, total_size) {
+                Ok(next_node) => {
+                    Ok(node? + next_node)
+                }
+                Err(e) => match e {
+                    Error::OrRefactor(next_node) => {
+                        Ok(node? | next_node)
+                    },
+                    _ => Err(e)
+                }
+            }
         }
     }
 
@@ -106,5 +114,46 @@ impl Add for AstNode {
     /// If the input is `abc`, `from_regex` will return `a + (b + c)`.
     fn add(self, rhs: Self) -> Self::Output {
         AstNode::Concat(Box::new(self), Box::new(rhs))
+    }
+}
+
+impl BitOr for AstNode {
+    type Output = AstNode;
+
+    /// This is not a bitwise operation. It's a workaround to overload the `or` operator.
+    fn bitor(self, rhs: Self) -> Self::Output {
+        AstNode::Alternate(Box::new(self), Box::new(rhs))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn literals() {
+        assert_eq!(
+            AstNode::from_regex("aab").unwrap(),
+            AstNode::literal('a') + (AstNode::literal('a') + AstNode::literal('b'))
+        );
+    }
+
+    #[test]
+    fn bracket_expression_inclusive() {
+        assert_eq!(
+            AstNode::from_regex("a[bc]").unwrap(),
+            AstNode::literal('a')
+                + AstNode::character_pattern_inclusive(HashSet::from_iter("bc".chars()))
+        );
+    }
+
+    #[test]
+    fn bracket_expression_exclusive() {
+        assert_eq!(
+            AstNode::from_regex("a[^bc]").unwrap(),
+            AstNode::literal('a')
+                + AstNode::character_pattern_exclusive(HashSet::from_iter("bc".chars()))
+        );
     }
 }
