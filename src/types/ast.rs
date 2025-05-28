@@ -100,7 +100,7 @@ impl AstNode {
         }
     }
 
-    pub fn from_regex(pattern: &str) -> Result<Self, Error> {
+    pub fn from_pattern(pattern: &str) -> Result<Self, Error> {
         Self::regex_to_ast(pattern, 0, pattern.len())
     }
 }
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn literals() {
         assert_eq!(
-            AstNode::from_regex("aab").unwrap(),
+            AstNode::from_pattern("aab").unwrap(),
             AstNode::literal('a') + (AstNode::literal('a') + AstNode::literal('b'))
         );
     }
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn bracket_expression_inclusive() {
         assert_eq!(
-            AstNode::from_regex("a[bc]").unwrap(),
+            AstNode::from_pattern("a[bc]").unwrap(),
             AstNode::literal('a')
                 + AstNode::character_pattern_inclusive(HashSet::from_iter("bc".chars()))
         );
@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn bracket_expression_exclusive() {
         assert_eq!(
-            AstNode::from_regex("a[^bc]").unwrap(),
+            AstNode::from_pattern("a[^bc]").unwrap(),
             AstNode::literal('a')
                 + AstNode::character_pattern_exclusive(HashSet::from_iter("bc".chars()))
         );

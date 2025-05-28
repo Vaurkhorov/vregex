@@ -6,16 +6,7 @@ use types::error::Error;
 use types::re::*;
 
 pub fn get_regex(pattern: &str) -> Result<RegEx, Error> {
-    let ast = AstNode::from_regex(pattern)?;
-    let enfa = Nfa::from_ast(&ast);
-
-    todo!(
-        "Generated AST: {:#?}\n\
-        Generated ε-NFA: {:#?}\n\
-        The rest is a work in progress",
-        ast,
-        enfa,
-    );
+    RegEx::from_pattern(pattern)
 }
 
 #[cfg(test)]
@@ -24,6 +15,19 @@ mod tests {
 
     #[test]
     fn basic_regex() {
-        assert!(get_regex("aa|b").is_ok())
+        let re = RegEx::from_pattern("aabbaa|b").unwrap();
+
+        assert_eq!(re.search("aabbab"), Some(0));
+        assert_eq!(re.search("ac"), None);
+    }
+
+    #[test]
+    fn exact_match_only() {
+        let re = RegEx::from_pattern("abc").unwrap();
+
+        assert_eq!(re.search("abc"), Some(0));
+        assert_eq!(re.search("xabcx"), Some(1));
+        assert_eq!(re.search("ab"), None);
+        assert_eq!(re.search("xyz"), None);
     }
 }
