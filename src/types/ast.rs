@@ -18,7 +18,7 @@ pub enum CharacterPattern {
 pub enum AstNode {
     Character(Character),
     Concat(Box<AstNode>, Box<AstNode>),
-    Alternate(Box<AstNode>, Box<AstNode>),  // or `|`
+    Alternate(Box<AstNode>, Box<AstNode>), // or `|`
 }
 
 use Character::*;
@@ -44,7 +44,8 @@ impl AstNode {
         let node = {
             match first_character {
                 '[' => {
-                    let pattern_is_inclusive = pattern.chars().nth(1).ok_or(Error::UnexpectedEof(index))? != '^';
+                    let pattern_is_inclusive =
+                        pattern.chars().nth(1).ok_or(Error::UnexpectedEof(index))? != '^';
                     let mut pattern_set: HashSet<char> = HashSet::new();
                     let mut iter = pattern.chars();
                     iter.next();
@@ -77,7 +78,11 @@ impl AstNode {
                     }
                 }
                 '|' => {
-                    return Err(Error::OrRefactor(Self::regex_to_ast(&pattern[next_index..], index + next_index, total_size)?))
+                    return Err(Error::OrRefactor(Self::regex_to_ast(
+                        &pattern[next_index..],
+                        index + next_index,
+                        total_size,
+                    )?));
                 }
                 _ => Ok(Self::literal(first_character)),
             }
@@ -87,15 +92,11 @@ impl AstNode {
             node
         } else {
             match Self::regex_to_ast(&pattern[next_index..], index + next_index, total_size) {
-                Ok(next_node) => {
-                    Ok(node? + next_node)
-                }
+                Ok(next_node) => Ok(node? + next_node),
                 Err(e) => match e {
-                    Error::OrRefactor(next_node) => {
-                        Ok(node? | next_node)
-                    },
-                    _ => Err(e)
-                }
+                    Error::OrRefactor(next_node) => Ok(node? | next_node),
+                    _ => Err(e),
+                },
             }
         }
     }

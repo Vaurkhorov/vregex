@@ -1,5 +1,8 @@
 use crate::{AstNode, Character};
-use petgraph::{stable_graph::{NodeIndex, StableDiGraph}, visit::EdgeRef};
+use petgraph::{
+    stable_graph::{NodeIndex, StableDiGraph},
+    visit::EdgeRef,
+};
 use std::collections::{HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -77,7 +80,7 @@ impl Nfa {
 
                     queue.push_back((first, x1, x2));
                     queue.push_back((second, y1, y2));
-                },
+                }
             }
         }
 
@@ -87,7 +90,10 @@ impl Nfa {
     pub fn get_null_closure(&self, node: NodeIndex) -> HashSet<NodeIndex> {
         let mut closure: HashSet<NodeIndex> = HashSet::from([node]);
 
-        for edge in self.graph.edges_directed(node, petgraph::Direction::Outgoing) {
+        for edge in self
+            .graph
+            .edges_directed(node, petgraph::Direction::Outgoing)
+        {
             if *edge.weight() == Condition::Epsilon {
                 closure.insert(edge.target());
             }
@@ -99,12 +105,21 @@ impl Nfa {
     pub fn get_transition(&self, node: NodeIndex, condition: Condition) -> HashSet<NodeIndex> {
         let mut next_states: HashSet<NodeIndex> = HashSet::new();
 
-        for edge in self.graph.edges_directed(node, petgraph::Direction::Outgoing) {
+        for edge in self
+            .graph
+            .edges_directed(node, petgraph::Direction::Outgoing)
+        {
             if *edge.weight() == condition {
                 next_states.insert(edge.target());
             }
         }
 
         next_states
+    }
+}
+
+impl Default for Nfa {
+    fn default() -> Self {
+        Self::new()
     }
 }
