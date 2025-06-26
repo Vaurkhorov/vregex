@@ -25,10 +25,7 @@ impl RegEx {
         for character in string.chars() {
             let mut next_states: HashSet<NodeIndex> = HashSet::new();
             for state in current_states.iter() {
-                let transition_states = self.nfa.get_transition(
-                    *state,
-                    super::enfa::Condition::Char(crate::types::ast::Character::Literal(character)),
-                );
+                let transition_states = self.nfa.get_transition(*state, character);
                 for next_state in transition_states {
                     next_states.extend(self.nfa.get_null_closure(next_state));
                 }

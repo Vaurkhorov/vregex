@@ -102,15 +102,41 @@ impl Nfa {
         closure
     }
 
-    pub fn get_transition(&self, node: NodeIndex, condition: Condition) -> HashSet<NodeIndex> {
+    pub fn get_transition(&self, node: NodeIndex, condition: char) -> HashSet<NodeIndex> {
         let mut next_states: HashSet<NodeIndex> = HashSet::new();
 
-        for edge in self
+        let mut current_edges: Vec<_> = self
             .graph
-            .edges_directed(node, petgraph::Direction::Outgoing)
-        {
-            if *edge.weight() == condition {
-                next_states.insert(edge.target());
+            .edges_directed(node, petgraph::Outgoing)
+            .collect();
+
+        while let Some(edge) = current_edges.pop() {
+            match edge.weight() {
+                Condition::Char(character) => match character {
+                    Character::Literal(literal) => {
+                        if *literal == condition {
+                            next_states.insert(edge.target());
+                        }
+                    }
+                    Character::Pattern(character_pattern) => match character_pattern {
+                        super::ast::CharacterPattern::Include(hash_set) => {
+                            if hash_set.contains(&condition) {
+                                next_states.insert(edge.target());
+                            }
+                        }
+                        super::ast::CharacterPattern::Exclude(hash_set) => {
+                            if !hash_set.contains(&condition) {
+                                next_states.insert(edge.target());
+                            }
+                        }
+                    },
+                },
+                Condition::Epsilon => {
+                    if next_states.contains(&edge.target()) {
+                        current_edges
+                            .extend(self.graph.edges_directed(edge.target(), petgraph::Outgoing));
+                    }
+                }
             }
         }
 

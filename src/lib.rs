@@ -30,4 +30,12 @@ mod tests {
         assert_eq!(re.search("ab"), None);
         assert_eq!(re.search("xyz"), None);
     }
+
+    #[test]
+    fn multiple() {
+        let re = RegEx::from_pattern("a[ab]").unwrap();
+
+        assert_eq!(re.search("aa"), Some(0));
+        assert_eq!(re.search("ab"), Some(0));
+    }
 }
