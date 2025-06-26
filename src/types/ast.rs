@@ -63,6 +63,10 @@ impl AstNode {
                             next_index += 1;
                         } else if character == ']' {
                             closed = true;
+
+                            // I'm not sure why I'm doing this, but if I don't, the character immediately after `]` is ignored
+                            next_index -= 1;
+                            
                             break;
                         } else {
                             pattern_set.insert(character);
