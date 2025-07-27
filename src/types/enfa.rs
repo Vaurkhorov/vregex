@@ -115,18 +115,27 @@ impl Nfa {
                 Condition::Char(character) => match character {
                     Character::Literal(literal) => {
                         if *literal == condition {
-                            next_states = next_states.union(&self.get_null_closure(edge.target())).cloned().collect();
+                            next_states = next_states
+                                .union(&self.get_null_closure(edge.target()))
+                                .cloned()
+                                .collect();
                         }
                     }
                     Character::Pattern(character_pattern) => match character_pattern {
                         super::ast::CharacterPattern::Include(hash_set) => {
                             if hash_set.contains(&condition) {
-                                next_states = next_states.union(&self.get_null_closure(edge.target())).cloned().collect();
+                                next_states = next_states
+                                    .union(&self.get_null_closure(edge.target()))
+                                    .cloned()
+                                    .collect();
                             }
                         }
                         super::ast::CharacterPattern::Exclude(hash_set) => {
                             if !hash_set.contains(&condition) {
-                                next_states = next_states.union(&self.get_null_closure(edge.target())).cloned().collect();
+                                next_states = next_states
+                                    .union(&self.get_null_closure(edge.target()))
+                                    .cloned()
+                                    .collect();
                             }
                         }
                     },

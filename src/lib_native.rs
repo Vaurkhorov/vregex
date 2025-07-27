@@ -50,4 +50,25 @@ mod tests {
 
         assert_eq!(re.search(""), None);
     }
+
+    #[test]
+    fn any_char() {
+        let re = RegEx::from_pattern("a.b").unwrap();
+
+        assert_eq!(re.search("axb"), Some(0));
+        assert_eq!(re.search("ayb"), Some(0));
+        assert_eq!(re.search("a.b"), Some(0));
+        assert_eq!(re.search("aaxb"), Some(1));
+        assert_eq!(re.search("ab"), None);
+    }
+
+    #[test]
+    fn any_char_2() {
+        let re = RegEx::from_pattern(".").unwrap();
+
+        assert_eq!(re.search("a"), Some(0));
+        assert_eq!(re.search(" "), Some(0));
+        assert_eq!(re.search("aa"), Some(0));
+        assert_eq!(re.search(""), None);
+    }
 }

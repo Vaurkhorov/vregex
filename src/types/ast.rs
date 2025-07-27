@@ -66,7 +66,7 @@ impl AstNode {
 
                             // I'm not sure why I'm doing this, but if I don't, the character immediately after `]` is ignored
                             next_index -= 1;
-                            
+
                             break;
                         } else {
                             pattern_set.insert(character);
@@ -81,12 +81,13 @@ impl AstNode {
                         Ok(Self::character_pattern_exclusive(pattern_set))
                     }
                 }
-                '|' => {
-                    return Err(Error::OrRefactor(Self::regex_to_ast(
-                        &pattern[next_index..],
-                        index + next_index,
-                        total_size,
-                    )?));
+                '|' => Err(Error::OrRefactor(Self::regex_to_ast(
+                    &pattern[next_index..],
+                    index + next_index,
+                    total_size,
+                )?)),
+                '.' => {
+                    Ok(Self::Character(Pattern(Exclude(HashSet::new())))) // exclude nothing = include everything
                 }
                 _ => Ok(Self::literal(first_character)),
             }
