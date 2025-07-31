@@ -71,4 +71,73 @@ mod tests {
         assert_eq!(re.search("aa"), Some(0));
         assert_eq!(re.search(""), None);
     }
+
+    #[test]
+    fn digit() {
+        let re = RegEx::from_pattern(r"\d").unwrap();
+
+        assert_eq!(re.search(""), None);
+        assert_eq!(re.search("11"), Some(0));
+        assert_eq!(re.search("a"), None);
+        assert_eq!(re.search("123abc7123abc"), Some(0));
+        assert_eq!(re.search("++123abc7123abc++"), Some(2));
+    }
+
+    #[test]
+    fn digit_2() {
+        let re = RegEx::from_pattern(r"123abc\d123abc").unwrap();
+
+        assert_eq!(re.search(""), None);
+        assert_eq!(re.search("123abc7123abc"), Some(0));
+        assert_eq!(re.search("++123abc7123abc++"), Some(2));
+        assert_eq!(re.search("++123abc+123abc++"), None);
+    }
+
+    #[test]
+    fn digit_exclusive() {
+        let re = RegEx::from_pattern(r"\D").unwrap();
+
+        assert_eq!(re.search(""), None);
+        assert_eq!(re.search("11"), None);
+        assert_eq!(re.search("a"), Some(0));
+        assert_eq!(re.search("123abc7123abc"), Some(3));
+        assert_eq!(re.search("++123abc7123abc++"), Some(0));
+    }
+
+    #[test]
+    fn digit_exclusive_2() {
+        let re = RegEx::from_pattern(r"123abc\D123abc").unwrap();
+
+        assert_eq!(re.search(""), None);
+        assert_eq!(re.search("123abc7123abc"), None);
+        assert_eq!(re.search("123abcX123abc"), Some(0));
+        assert_eq!(re.search("++123abcX123abc++"), Some(2));
+        assert_eq!(re.search("++123abc7123abc++"), None);
+    }
+
+    #[test]
+    fn digit_alternate() {
+        let re = RegEx::from_pattern(r"a|\d").unwrap();
+
+        assert_eq!(re.search(""), None);
+        assert_eq!(re.search("a"), Some(0));
+        assert_eq!(re.search("1"), Some(0));
+        assert_eq!(re.search("x73ax"), Some(1));
+
+        let re = RegEx::from_pattern(r"\d|a").unwrap();
+
+        assert_eq!(re.search(""), None);
+        assert_eq!(re.search("a"), Some(0));
+        assert_eq!(re.search("1"), Some(0));
+        assert_eq!(re.search("x73ax"), Some(1));
+    }
+
+    #[test]
+    fn misc_classes() {
+        let re = RegEx::from_pattern(r"+\s+\l+\u+\S+\L+\U+").unwrap();
+
+        assert_eq!(re.search(""), None);
+        assert_eq!(re.search("+ + + + + + +"), None);
+        assert_eq!(re.search("+ +v+V+x+V+v+"), Some(0));
+    }
 }

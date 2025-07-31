@@ -2,6 +2,11 @@ use crate::Error;
 use std::collections::hash_set::HashSet;
 use std::ops::{Add, BitOr};
 
+// defined within this file
+use Character::*;
+use CharacterClass::*;
+use CharacterPattern::*;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Character {
     Literal(char),
@@ -12,6 +17,29 @@ pub enum Character {
 pub enum CharacterPattern {
     Include(HashSet<char>),
     Exclude(HashSet<char>),
+    IncludeClass(CharacterClass),
+    ExcludeClass(CharacterClass),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum CharacterClass {
+    Any,        // .
+    Digit,      // \d, \D
+    Whitespace, // \s, \S
+    Lowercase,  // \l, \L
+    Uppercase,  // \u, \U
+}
+
+impl CharacterClass {
+    pub fn matches(&self, condition: &char) -> bool {
+        match self {
+            Any => true,
+            Digit => condition.is_ascii_digit(),
+            Whitespace => condition.is_whitespace(),
+            Lowercase => condition.is_lowercase(),
+            Uppercase => condition.is_uppercase(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -20,9 +48,6 @@ pub enum AstNode {
     Concat(Box<AstNode>, Box<AstNode>),
     Alternate(Box<AstNode>, Box<AstNode>), // or `|`
 }
-
-use Character::*;
-use CharacterPattern::*;
 
 impl AstNode {
     pub fn literal(character: char) -> Self {
@@ -87,7 +112,28 @@ impl AstNode {
                     total_size,
                 )?)),
                 '.' => {
-                    Ok(Self::Character(Pattern(Exclude(HashSet::new())))) // exclude nothing = include everything
+                    Ok(Self::Character(Pattern(IncludeClass(Any)))) // exclude nothing = include everything
+                }
+                '\\' => {
+                    next_index += 1;
+                    match pattern.chars().nth(1) {
+                        Some(c) => match c {
+                            'd' => Ok(Self::Character(Pattern(IncludeClass(Digit)))),
+                            'D' => Ok(Self::Character(Pattern(ExcludeClass(Digit)))),
+
+                            's' => Ok(Self::Character(Pattern(IncludeClass(Whitespace)))),
+                            'S' => Ok(Self::Character(Pattern(ExcludeClass(Whitespace)))),
+
+                            'l' => Ok(Self::Character(Pattern(IncludeClass(Lowercase)))),
+                            'L' => Ok(Self::Character(Pattern(ExcludeClass(Lowercase)))),
+
+                            'u' => Ok(Self::Character(Pattern(IncludeClass(Uppercase)))),
+                            'U' => Ok(Self::Character(Pattern(ExcludeClass(Uppercase)))),
+
+                            _ => Ok(Self::Character(Literal(c))),
+                        },
+                        None => Err(Error::UnexpectedEof(index)),
+                    }
                 }
                 _ => Ok(Self::literal(first_character)),
             }

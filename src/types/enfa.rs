@@ -138,6 +138,22 @@ impl Nfa {
                                     .collect();
                             }
                         }
+                        super::ast::CharacterPattern::IncludeClass(character_class) => {
+                            if character_class.matches(&condition) {
+                                next_states = next_states
+                                    .union(&self.get_null_closure(edge.target()))
+                                    .cloned()
+                                    .collect();
+                            }
+                        }
+                        super::ast::CharacterPattern::ExcludeClass(character_class) => {
+                            if !character_class.matches(&condition) {
+                                next_states = next_states
+                                    .union(&self.get_null_closure(edge.target()))
+                                    .cloned()
+                                    .collect();
+                            }
+                        }
                     },
                 },
                 Condition::Epsilon => {
